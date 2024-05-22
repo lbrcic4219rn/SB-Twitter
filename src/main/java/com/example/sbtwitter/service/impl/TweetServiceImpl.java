@@ -1,16 +1,18 @@
-package com.example.sbtwitter.service;
+package com.example.sbtwitter.service.impl;
 
 import com.example.sbtwitter.exception.TweetNotFoundException;
 import com.example.sbtwitter.exception.UnauthorisedTweetDeletionException;
 import com.example.sbtwitter.model.HashTag;
 import com.example.sbtwitter.model.Tweet;
-import com.example.sbtwitter.repository.TweetRepo;
+import com.example.sbtwitter.repository.TweetRepository;
 import com.example.sbtwitter.repository.TweetSpecification;
 import com.example.sbtwitter.request.TweetsSearchRequest;
-import com.example.sbtwitter.response.TweetsPageResp;
+import com.example.sbtwitter.response.TweetsPageResponse;
+import com.example.sbtwitter.service.HashTagService;
+import com.example.sbtwitter.service.TweetService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.transaction.Transactional;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.AllArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -28,20 +30,19 @@ import java.util.stream.Collectors;
 import static com.example.sbtwitter.adapter.TweetAdapter.toTweetRespList;
 
 @Service
+@AllArgsConstructor
 public class TweetServiceImpl implements TweetService {
 
-    private final TweetRepo tweetRepo;
+    private final TweetRepository tweetRepository;
     private final HashTagService hashTagService;
-
-    @Autowired
-    public TweetServiceImpl(TweetRepo tweetRepo, HashTagService hashTagService) {
-        this.tweetRepo = tweetRepo;
-        this.hashTagService = hashTagService;
-    }
 
     @Override
     @Transactional
     public Tweet createTweet(Tweet tweet) {
+        if(tweet.getHashTags() == null) {
+            tweet.setHashTags(Set.of());
+        }
+
         Set<HashTag> tags = tweet.getHashTags().stream().map(hashTag -> {
             HashTag existingHashTag = this.hashTagService.getByHasTag(hashTag.getHashTag());
             return Objects.requireNonNullElse(existingHashTag, hashTag);
@@ -49,22 +50,22 @@ public class TweetServiceImpl implements TweetService {
 
         tweet.setHashTags(tags);
 
-        return tweetRepo.save(tweet);
+        return tweetRepository.save(tweet);
     }
 
     @Override
     public void deleteTweet(Long id, String username) throws TweetNotFoundException, UnauthorisedTweetDeletionException {
-        Tweet tweet = tweetRepo.findById(id).orElseThrow(TweetNotFoundException::new);
+        Tweet tweet = tweetRepository.findById(id).orElseThrow(TweetNotFoundException::new);
 
         if(!tweet.getCreatedBy().equals(username)) {
             throw new UnauthorisedTweetDeletionException();
         }
 
-        tweetRepo.delete(tweet);
+        tweetRepository.delete(tweet);
     }
 
     @Override
-    public TweetsPageResp queryTweets(TweetsSearchRequest request) {
+    public TweetsPageResponse queryTweets(TweetsSearchRequest request) {
         Sort sort = Sort.by(Sort.Direction.DESC, "createdAt");
 
         //Better would be pageNumber and pageSize format
@@ -72,9 +73,9 @@ public class TweetServiceImpl implements TweetService {
 
         Specification<Tweet> spec = generateSpec(request);
 
-        Page<Tweet> tweets = tweetRepo.findAll(spec, pageable);
+        Page<Tweet> tweets = tweetRepository.findAll(spec, pageable);
 
-        TweetsPageResp resp = new TweetsPageResp();
+        TweetsPageResponse resp = new TweetsPageResponse();
         resp.setTweets(toTweetRespList(tweets.getContent()));
 
         if(tweets.hasNext()) {

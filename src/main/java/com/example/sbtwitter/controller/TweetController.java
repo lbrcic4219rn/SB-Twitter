@@ -1,18 +1,19 @@
 package com.example.sbtwitter.controller;
 
 import com.example.sbtwitter.exception.TweetNotFoundException;
+import com.example.sbtwitter.exception.UnauthorisedTweetDeletionException;
 import com.example.sbtwitter.model.Tweet;
-import com.example.sbtwitter.request.PostTweetReq;
+import com.example.sbtwitter.request.PostTweetRequest;
 import com.example.sbtwitter.request.TweetsSearchRequest;
+import com.example.sbtwitter.response.TweetResponse;
+import com.example.sbtwitter.response.TweetsPageResponse;
 import com.example.sbtwitter.service.TweetService;
 import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 import static com.example.sbtwitter.adapter.HashTagAdapter.toHashTagSet;
 import static com.example.sbtwitter.adapter.TweetAdapter.toTweetResp;
@@ -22,22 +23,16 @@ import static com.example.sbtwitter.adapter.TweetAdapter.toTweetResp;
         value = "/v1/tweets",
         produces = MediaType.APPLICATION_JSON_VALUE
 )
+@AllArgsConstructor
 public class TweetController {
-
     private final TweetService tweetService;
-
-    @Autowired
-    public TweetController(TweetService tweetService) {
-        this.tweetService = tweetService;
-    }
-
     @GetMapping
-    ResponseEntity<?> getTweets(@ModelAttribute @Valid TweetsSearchRequest request) {
+    ResponseEntity<TweetsPageResponse> getTweets(@ModelAttribute @Valid TweetsSearchRequest request) {
         return ResponseEntity.status(HttpStatus.OK).body(tweetService.queryTweets(request));
     }
 
     @PostMapping
-    ResponseEntity<?> postTweets(@RequestBody @Valid PostTweetReq tweet, @RequestHeader("X-Username") String username) {
+    ResponseEntity<TweetResponse> postTweets(@RequestBody @Valid PostTweetRequest tweet, @RequestHeader("X-Username") String username) {
 
         Tweet createdTweet = tweetService.createTweet(Tweet.builder()
                 .createdBy(username)
@@ -49,7 +44,7 @@ public class TweetController {
     }
 
     @DeleteMapping("/{id}")
-    ResponseEntity<?> deleteTweet(@PathVariable Long id, @RequestHeader("X-Username") String username) throws TweetNotFoundException {
+    ResponseEntity<?> deleteTweet(@PathVariable Long id, @RequestHeader("X-Username") String username) throws TweetNotFoundException, UnauthorisedTweetDeletionException {
         tweetService.deleteTweet(id, username);
         return ResponseEntity.status(HttpStatus.OK).build();
     }

@@ -6,8 +6,8 @@ import lombok.Data;
 import java.util.List;
 
 @Data
-public class TweetsPageResp {
-    private List<TweetResp> tweets;
+public class TweetsPageResponse {
+    private List<TweetResponse> tweets;
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private String nextPage = null;
 }

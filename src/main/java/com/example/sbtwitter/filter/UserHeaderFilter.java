@@ -1,4 +1,4 @@
-package com.example.sbtwitter.fiter;
+package com.example.sbtwitter.filter;
 
 import com.example.sbtwitter.exception.UnauthorisedException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -8,7 +8,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
-import org.springframework.web.ErrorResponse;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
@@ -23,16 +22,10 @@ public class UserHeaderFilter extends OncePerRequestFilter {
     private final ObjectMapper objectMapper;
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws UnauthorisedException, IOException, ServletException {
-
-        if(request.getHeader("X-Username") == null) {
-            handleUnauthorized(response);
-            return;
-        }
-
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws IOException, ServletException {
         String username = request.getHeader("X-Username");
 
-        if(!username.matches(PATTERN)) {
+        if(request.getHeader("X-Username") == null || !username.matches(PATTERN)) {
             handleUnauthorized(response);
             return;
         }
