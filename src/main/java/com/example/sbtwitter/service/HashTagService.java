@@ -2,8 +2,6 @@ package com.example.sbtwitter.service;
 
 import com.example.sbtwitter.model.HashTag;
 
-import java.util.List;
-
 /**
  * Service interface for HashTag related operations.
  */
